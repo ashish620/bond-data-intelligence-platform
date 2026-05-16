@@ -1,6 +1,6 @@
 # Bond Data Intelligence Platform
 
-> Unified query platform for time-split bond data — intelligent routing across dual MongoDB, NLP query interface, RAG-grounded prospectus validation, event-driven agentic reconciliation, and immutable compliance audit trail.
+> Unified query platform for time-split bond data — intelligent routing across dual MongoDB, NLP query interface, RAG-grounded prospectus validation, event-driven agentic reconciliation, and immutable audit trail with crypto-proof integrity.
 
 ---
 
@@ -10,13 +10,13 @@ An AI-powered platform for financial security master systems that:
 - enables natural language querying with LLM-extracted parameters
 - validates data using RAG over PDF prospectus documents
 - automates reconciliation using agentic workflows with human-in-the-loop approval
-- tracks every data override immutably with crypto-proof integrity (Day 5)
+- tracks every data override immutably with crypto-proof integrity (Day 5 — Tier 1 ✅)
 
 ---
 
 ## Why This Exists
 
-This project is inspired by common challenges in financial data systems, where security master data for bonds is often siloed across multiple systems with time boundaries, making unified querying [...]
+This project is inspired by common challenges in financial data systems, where security master data for bonds is often siloed across multiple systems with time boundaries, making unified querying impossible without custom routing logic.
 
 ---
 
@@ -59,7 +59,7 @@ Legacy MongoDB               Current MongoDB
               (Day 5: Immutable Audit Trail)
 ```
 
-**Data integrity note:** Deduplication happens upstream during the Bloomberg data pull — before data enters this platform. Legacy MongoDB is guaranteed clean with no overlap against Current Mong[...]
+**Data integrity note:** Deduplication happens upstream during the Bloomberg data pull — before data enters this platform. Legacy MongoDB is guaranteed clean with no overlap against Current MongoDB.
 
 ---
 
@@ -86,11 +86,12 @@ Legacy MongoDB               Current MongoDB
 |---------|-----------|----------------|
 | Day 1 ✅ | Structured API — `GET /api/v1/bonds` — explicit ISIN + date range, temporal routing across dual MongoDB | None — pure intelligent routing |
 | Day 2 ✅ | NLP Query — `POST /api/v1/query` — free-text query, LLM extracts ISIN + date range | LLM extracts structured parameters from natural language |
-| Day 3 ✅ | NLP + RAG — `POST /api/v3/validate/{isin}` — answers grounded in bond prospectus PDFs, mismatch detection vs security master | RAG over prospectus PDFs — vector retrieval + LLM[...]
-| Day 4 ✅ | Event-Driven Agentic Reconciliation — `POST /api/v4/ingest` — streaming file ingestion, per-record mismatch detection, concurrent AI agent instances (Plan→Execute→Validate→Resolve) | 4-phase agent reasoning with contextual LLM calls |
-| Day 5 🚀 | Immutable Audit Trail & Compliance — `GET /api/v5/audit-trail` — every data override cryptographically hashed, immutable logging, regulatory compliance | None — pure data integrity layer |
+| Day 3 ✅ | NLP + RAG — `POST /api/v3/validate/{isin}` — answers grounded in bond prospectus PDFs, mismatch detection vs security master | RAG over prospectus PDFs — vector retrieval + LLM grounding |
+| Day 4 ✅ | Event-Driven Agentic Reconciliation — `POST /api/v4/ingest` — streaming file ingestion, per-record mismatch detection, concurrent AI agent instances (Plan→Execute→Validate→Resolve), human-in-the-loop approval | 4-phase agent reasoning with LLM tool-calling |
+| Day 5 ✅ | **Tier 1 Complete** — Immutable Audit Trail & Compliance — `GET /api/v5/audit-trail` — every data override cryptographically hashed, immutable logging, regulatory compliance | None — pure data integrity + hashing |
 
-**Day 5 Status:** 📋 Specification complete. Implementation in progress.
+**Day 5 Status:** ✅ **Tier 1 Complete** (Immutable audit trail + SHA-256 hashing + compliance queries)  
+**Day 5 Roadmap:** ⏳ Tier 2 (Blockchain backing) — ⏳ Tier 3 (Compliance dashboard)
 
 ---
 
@@ -218,42 +219,73 @@ curl -X POST "http://localhost:8000/api/v1/query" \
 
 ### The Problem It Solves
 
-Operations teams receive daily feeds of security records from counterparties, custodians, or upstream systems. Reconciling each incoming record against the internal security master is tedious, er[...]
+Operations teams receive daily feeds of security records from counterparties, custodians, or upstream systems. Reconciling each incoming record against the internal security master is tedious, error-prone, and requires expert judgment.
 
 ### Architecture
 
 - **Event-driven, not batch** — records are streamed one-by-one through a `FileIngestor`; each mismatch immediately publishes a `ReconciliationEvent` to an async `EventBus`.
-- **One agent class, one per event** — a `ReconciliationAgent` is spawned per event; the event bus processes events sequentially, but within each agent run, source fetches (Phase 2) and field a[...]
+- **One agent class, one per event** — a `ReconciliationAgent` is spawned per event; the event bus processes events sequentially, but within each agent run, source fetches (Phase 2) and field assessments (Phase 3) run concurrently.
 - **4-phase reasoning** — each agent reasons through Plan → Execute → Validate → Resolve, using tool-calls against legacy DB, current DB, and the prospectus RAG index.
 - **Human-in-the-loop** — agent findings are stored as PENDING; a human operator calls `/api/v4/decide` to APPROVE or REJECT.
-- **Immutable audit trail** — every decision (with timestamp, operator, and notes) is written to an append-only MongoDB collection and exposed via `/api/v4/audit`.
+- **Immutable audit trail** — every decision (with timestamp, operator, and notes) is written to an append-only MongoDB collection and exposed via `/api/v5/audit-trail`.
 
 ---
 
 ## Day 5 — Immutable Audit Trail & Compliance (`/api/v5`)
 
-**See:** [`day5/SPECIFICATION.md`](day5/SPECIFICATION.md) for full details.
+**See:** [`audit/README.md`](audit/README.md) for full implementation details.
 
 ### The Problem It Solves
 
-Every data override in Day 4 must be immutably logged for regulatory compliance (SEC Rule 17a-4, MiFID II, FINRA, SOX). Operations teams currently document these in Confluence (editable!) — which is a **compliance violation**.
+Every data override in Day 4 must be immutably logged for regulatory compliance (SEC Rule 17a-4, MiFID II, FINRA, SOX). Operations teams currently document these in Confluence (editable!) — which is a compliance violation.
 
-Day 5 replaces Confluence with:
+### Tier 1 Solution (✅ Complete)
+
+Day 5 Tier 1 replaces Confluence with:
 - ✅ Immutable, append-only audit trail (MongoDB)
 - ✅ SHA-256 hashing for data integrity
 - ✅ User attribution + timestamps
 - ✅ Reason tracking (why was this override approved?)
-- ✅ Optional blockchain backing (Polygon/Ethereum) for crypto-proof
-- ✅ `/api/v5/audit-trail` & `/api/v5/compliance-report` for auditors
+- ✅ `/api/v5/audit-trail` for querying audit entries
+- ✅ `/api/v5/compliance-report` for auditor-ready reports
+- ✅ `/api/v5/audit-trail/verify` for integrity verification
 
 ### Why Confluence Is Not Enough
 
 | Aspect | Confluence | Day 5 |
 |--------|-----------|-------|
 | Can be edited? | ✅ Yes (compliance violation) | ❌ No (immutable) |
-| Cryptographic proof? | ❌ No | ✅ Yes (SHA-256 + blockchain) |
+| Cryptographic proof? | ❌ No | ✅ Yes (SHA-256) |
 | Regulatory admissible? | ⚠️ Weak | ✅ Yes |
 | Audit query capability? | ❌ Manual search | ✅ `/api/v5/audit-trail` |
+
+### API Endpoints (Day 5 — Tier 1)
+
+#### `GET /api/v5/audit-trail`
+Query the immutable audit trail with optional filters.
+
+**Parameters:** `isin`, `field_name`, `user_id`, `from_date`, `to_date`, `reason_contains`, `limit`, `offset`
+
+**Example:**
+```bash
+curl "http://localhost:8000/api/v5/audit-trail?isin=XS1234567890&limit=50"
+```
+
+#### `POST /api/v5/audit-trail/verify`
+Verify that an audit entry hasn't been tampered with.
+
+**Example:**
+```bash
+curl -X POST "http://localhost:8000/api/v5/audit-trail/verify?audit_id=550e8400-e29b-41d4-a716-446655440000"
+```
+
+#### `GET /api/v5/compliance-report/{isin}`
+Generate compliance report for auditors.
+
+**Example:**
+```bash
+curl "http://localhost:8000/api/v5/compliance-report/XS1234567890?from_date=2026-01-01&to_date=2026-04-24"
+```
 
 ---
 
@@ -274,8 +306,8 @@ pytest tests/test_router.py -v
 pytest tests/test_api.py -v
 pytest tests/test_nlp.py -v
 pytest tests/test_rag.py -v
-pytest tests/test_day4_comparator.py -v
-pytest tests/test_day5_audit.py -v
+pytest tests/test_reconciliation_comparator.py -v
+pytest tests/test_audit.py -v
 ```
 
 Tests do **not** require running MongoDB instances — all DB interactions are mocked.
@@ -295,23 +327,28 @@ bond-data-intelligence-platform/
 │   └── api/
 │       └── bonds.py         ← API endpoints (Day 1 + Day 2)
 │
-├── day3/                    ← RAG prospectus validation
+├── rag/                     ← RAG prospectus validation
 │   ├── ingestion/           ← PDF ingestion + ChromaDB
 │   ├── rag/                 ← RAG query engine
 │   └── api/                 ← POST /api/v3/validate/{isin}
 │
-├── day4/                    ← Event-driven agentic reconciliation
+├── reconciliation/          ← Event-driven agentic reconciliation
 │   ├── agent/               ← ReconciliationAgent (4-phase)
 │   ├── pipeline/            ← EventBus, FileIngestor, Comparator
 │   ├── store/               ← MasterStore + DecisionStore (MongoDB)
 │   └── api/                 ← /api/v4 endpoints
 │
-├── day5/                    ← Immutable audit trail & compliance
-│   ├── store/               ← AuditStore (MongoDB + hashing)
-│   ├── blockchain/          ← (Optional) Polygon/Ethereum backing
-│   ├── api/                 ← /api/v5 endpoints
-│   ├── SPECIFICATION.md     ← Full technical spec
-│   └── README.md            ← Implementation guide
+├── audit/                   ← Immutable audit trail & compliance
+│   ├── __init__.py
+│   ├── README.md            ← Implementation guide
+│   ├── models.py            ← Pydantic models
+│   ├── store/
+│   │   ├── __init__.py
+│   │   └── audit_store.py   ← MongoDB persistence
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── audit.py         ← /api/v5 endpoints
+│   └── blockchain/          ← (Tier 2 — future)
 │
 ├── docs/
 │   └── AUDIT_TRAIL_JUSTIFICATION.md ← Why immutable audit trails are essential
@@ -321,15 +358,21 @@ bond-data-intelligence-platform/
 │   ├── test_api.py          ← API endpoint and pagination tests
 │   ├── test_nlp.py          ← NLP extractor tests
 │   ├── test_rag.py          ← RAG pipeline tests
-│   ├── test_day4_comparator.py ← Day 4 comparator unit tests
-│   └── test_day5_audit.py   ← Day 5 audit trail tests
+│   ├── test_reconciliation_comparator.py ← Day 4 comparator unit tests
+│   └── test_audit.py        ← Day 5 audit trail tests
 │
 ├── seed/
 │   └── seed_data.py         ← Seed script for both MongoDB containers
 │
+├── .github/
+│   └── workflows/
+│       └── tests.yml        ← CI/CD pipeline (auto-test on push)
+│
+├── CONTRIBUTING.md          ← Contribution guidelines
 ├── docker-compose.yml       ← Two MongoDB containers + seed service + API
 ├── Dockerfile
 ├── requirements.txt
+├── requirements.lock        ← Pinned exact versions for production
 ├── .env.example
 └── README.md
 ```
@@ -348,11 +391,17 @@ This platform is designed to meet:
 
 ---
 
-## Next Steps (Day 5 Implementation)
+## Next Steps (Day 5 Future Enhancements)
 
-- [ ] **Tier 1** (MongoDB + SHA-256) — Core audit trail with hashing
-- [ ] **Tier 2** (Blockchain) — Write hashes to Polygon for crypto-proof
-- [ ] **Tier 3** (Dashboard) — Compliance reporting UI for auditors
+### Tier 2 — Blockchain Backing (⏳ Future)
+- [ ] Write hashes to Polygon smart contract for crypto-proof
+- [ ] Handle async retries and confirmation tracking
+- [ ] Add `GET /api/v5/blockchain-status/{audit_id}` endpoint
+
+### Tier 3 — Compliance Dashboard (⏳ Future)
+- [ ] React frontend for audit trail queries
+- [ ] Visual compliance report generation
+- [ ] Blockchain verification status display
 
 ---
 
